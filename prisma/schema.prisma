@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_DB_URL")
+}
+
+model User {
+  userId          String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  role            RoleType @default(user)
+  isEmailVerified Boolean  @default(false)
+  createdOn       DateTime @default(now())
+}
+
+model Patient {
+  patientId             String        @id @default(cuid())
+  name                  String
+  email                 String
+  phoneNumber           String
+  dateOfBirth           DateTime?
+  address               String?
+  insuranceProvider     String?
+  insurancePolicyNumber String?
+  medicalHistory        String?
+  appointments          Appointment[]
+  Review                Review[]
+}
+
+model Therapist {
+  therapistId String        @id @default(cuid()) @map("id")
+  name        String
+  email       String
+  phoneNumber String
+  specialties String[]
+  bio         String?
+  schedule    Appointment[]
+  reviews     Review[]
+}
+
+model Appointment {
+  appointmentId         String                  @id @default(cuid())
+  patientId             String
+  therapistId           String
+  startTime             DateTime
+  endTime               DateTime
+  type                  AppointmentType
+  notes                 String?
+  patient               Patient                 @relation(fields: [patientId], references: [patientId])
+  therapist             Therapist               @relation(fields: [therapistId], references: [therapistId])
+  therapistAppointments TherapistAppointments[] @relation("TherapistAppointments")
+}
+
+model TherapistAppointments {
+  therapistId              String
+  appointmentId            String
+  appointment              Appointment @relation("TherapistAppointments", fields: [appointmentAppointmentId], references: [appointmentId])
+  appointmentAppointmentId String
+
+  @@id([therapistId, appointmentId])
+}
+
+model Review {
+  id          String    @id @default(cuid())
+  patientId   String
+  therapistId String
+  rating      Int
+  comment     String?
+  patient     Patient   @relation(fields: [patientId], references: [patientId])
+  therapist   Therapist @relation(fields: [therapistId], references: [therapistId])
+}
+
+model TherapistOnboarding {
+  id                                Int      @id @default(autoincrement())
+  bio                               Biodata  @relation(fields: [biodataEmail], references: [email])
+  country                           String
+  highestEducationLvl               String
+  currOccupation                    String
+  yearsOfExp                        Int
+  specializedTherapyTech            String[]
+  areaOfExpertise                   String[]
+  avgRateForSession                 Int
+  crpoRegistrationNo                Int
+  isLicensed                        Boolean
+  licenseNumber                     String?
+  isDisciplinaryAction              Boolean
+  reasonForDisciplinary             String?
+  hasProfessionalLiabilityInsurance Boolean
+  policyNumber                      String?
+  isForBackgroundCheck              Boolean
+  hasOnlineTherExp                  Boolean
+  describeExp                       String?
+  currentAOR                        String
+  biodataEmail                      String
+}
+
+model Biodata {
+  name                String
+  email               String                @unique
+  phoneNumber         String
+  age                 Int
+  sex                 String
+  TherapistOnboarding TherapistOnboarding[]
+}
+
+model PatientOnboarding {
+  id          Int    @id @default(autoincrement())
+  name        String
+  email       String @unique
+  phoneNumber String
+  country     String
+}
+
+model EmailToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+}
+
+// Enums
+
+enum RoleType {
+  user
+  doctor
+  admin
+}
+
+enum AppointmentType {
+  consultation
+  follow_up
+}
